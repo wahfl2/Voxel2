@@ -1,3 +1,4 @@
+use wgpu::SurfaceError;
 use winit::{event_loop::{EventLoop, ControlFlow}, window::WindowBuilder, event::{Event, WindowEvent}};
 
 use self::renderer::Renderer;
@@ -37,6 +38,22 @@ impl Voxel2Client {
 
                 _ => {}
             },
+
+            Event::RedrawRequested(window_id) if window_id == self.renderer.window.inner.id() => {
+                let render_result = self.renderer.render();
+
+                match render_result {
+                    Ok(_) => (),
+                    Err(SurfaceError::Lost) => self.renderer.reconfigure(),
+                    Err(SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                    Err(e) => eprintln!("{:?}", e),
+                }
+            },
+
+            Event::MainEventsCleared => {
+                self.renderer.window.inner.request_redraw();
+            }
+
             _ => {}
         });
     }
